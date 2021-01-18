@@ -2,7 +2,9 @@
 
 This repository contains all of the open source Tuono tools. If you see some value in any of the tools here, they are free to use.
 
-#### This official Tuono repository contains user contributed content. Therefore, it is not possible for everything to undergo testing as part of the release cycle.
+#### This official Tuono repository contains user contributed content. Therefore, it is not possible for everything to undergo testing as part of the release cycle. 
+
+If you experience any problems, please consider opening a GitHub issue describing your problem.
 
 ## Giving Back
 
