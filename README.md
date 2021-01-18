@@ -4,7 +4,7 @@ This repository contains all of the open source Tuono tools. If you see some val
 
 ## Giving Back
 
-If you make any additions, please consider giving back to the community. If you have your own Tuono-related tools that you'd like to share, please consider adding them to this repository, so the community can use them.
+If you make any improvements to any of the tools here, or if you have your own Tuono-related tools that you'd like to share, please consider adding them to this repository and sharing them with the community.
 
 ## Licencing
 
