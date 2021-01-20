@@ -216,7 +216,7 @@ def azure_app_create(args, logger):
     '''Create Azure registration ond credentials'''
 
     logger.info("Generating Subscription details")
-    subscriptions = subprocess.run('az account list',
+    subscriptions = subprocess.run("az account list",
                                    check=True, shell=True, capture_output=True)
     for subscription in json.loads(subscriptions.stdout):
         if subscription["name"] == args.subscription_name:
@@ -224,7 +224,7 @@ def azure_app_create(args, logger):
     logger.debug(json.dumps(current, indent=2, sort_keys=True))
 
     logger.info("Creating App Registration")
-    app = subprocess.run(f'az ad app create --display-name {args.app_name}',
+    app = subprocess.run(f"az ad app create --display-name {args.app_name}"",
                          check=True, shell=True, capture_output=True)
     app = json.loads(app.stdout)
     logger.debug(json.dumps(app, indent=2, sort_keys=True))
@@ -232,22 +232,22 @@ def azure_app_create(args, logger):
     app_id = app['appId']
 
     logger.info("Generating Client Secret")
-    values = subprocess.run(f'az ad app credential reset --id {app_id} '
-                            f'--credential-description {args.credential} '
-                            f'--end-date `date -d "+5 years" +%F`',
+    values = subprocess.run(f"az ad app credential reset --id {app_id} "
+                            f"--credential-description {args.credential} "
+                            f"--end-date `date -d "+5 years" +%F`",
                             check=True, shell=True, capture_output=True)
     logger.info("Waiting 20s reconcile the secret creation")
     time.sleep(20)
 
     logger.info("Creating Service Principal")
-    subprocess.run(f'az ad sp create --id {app_id}',
+    subprocess.run(f"az ad sp create --id {app_id}",
                    check=True, shell=True, capture_output=True)
     logger.info("Waiting 20s reconcile the Service Principal creation")
     time.sleep(20)
 
     logger.info("Creating role assignment")
-    subprocess.run(f'az role assignment create --assignee {app_id} '
-                   f'--role Contributor --subscription {current["id"]}',
+    subprocess.run(f"az role assignment create --assignee {app_id} "
+                   f"--role Contributor --subscription {current["id"]}",
                    check=True, shell=True, capture_output=True)
     logger.info("Waiting 20s reconcile role assignment")
     time.sleep(20)
