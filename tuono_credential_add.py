@@ -52,18 +52,21 @@ class Tuono():
 
 
 class UserNameSpace(object):
+    '''User namespace object'''
 
     pass
 
 
 def start_argparser():
+    '''Initial parser'''
 
     parser = argparse.ArgumentParser(description='Use Case Dependent ArgParse',
                                      conflict_handler='resolve')
     return parser
 
 
-def get_shared_cli_args(parser):
+def get_shared_args(parser):
+    '''Shared arg parser'''
 
     parser.add_argument('-u', '--username',
                         required=True,
@@ -81,7 +84,20 @@ def get_shared_cli_args(parser):
     return parser, user_namespace
 
 
+def get_additional_args(parser, user_namespace):
+    '''Options parser'''
+
+    if user_namespace.venue == 'aws':
+        parser, args = get_aws_args(parser, user_namespace)
+
+    elif user_namespace.venue == 'azure':
+        parser, args = get_azure_args(parser, user_namespace)
+
+    return args
+
+
 def get_aws_args(parser, user_namespace):
+    '''AWS arg parser'''
 
     parser.add_argument('-i', '--iam_user',
                         required=True,
@@ -97,6 +113,7 @@ def get_aws_args(parser, user_namespace):
 
 
 def get_azure_args(parser, user_namespace):
+    '''Azure arg parser'''
 
     parser.add_argument('-n', '--subscription_name',
                         required=True,
@@ -114,7 +131,9 @@ def get_azure_args(parser, user_namespace):
 
     return parser, args
 
+
 def get_logger(filename):
+    '''Logger configuration'''
 
     logger = logging.getLogger('')
     logger.setLevel(logging.DEBUG)
@@ -134,28 +153,20 @@ def get_logger(filename):
 
     return logger
 
-def get_additional_cli_args(parser, user_namespace):
 
-    if user_namespace.venue == 'aws':
-        parser, cli_args = get_aws_args(parser, user_namespace)
-
-    elif user_namespace.venue == 'azure':
-        parser, cli_args = get_azure_args(parser, user_namespace)
-
-    return cli_args
-
-
-def aws_user_group_create(cli_args, logger):
+def aws_user_group_create(args, logger):
     '''Create AWS user and group'''
 
     logger.info("Creating IAM user")
-    user = subprocess.run(f"aws iam create-user --user-name {cli_args.iam_user} --output json",
+    user = subprocess.run(f"aws iam create-user --user-name {args.iam_user} "
+                          f"--output json",
                           check=True, shell=True, capture_output=True)
     user = json.loads(user.stdout)
     logger.debug(json.dumps(user, indent=2, sort_keys=True))
 
     logger.info("Creating IAM group")
-    group = subprocess.run(f"aws iam create-group --group-name {cli_args.iam_group} --output json",
+    group = subprocess.run(f"aws iam create-group --group-name "
+                           f"{args.iam_group} --output json",
                            check=True, shell=True, capture_output=True)
     group = json.loads(group.stdout)
     logger.debug(json.dumps(group, indent=2, sort_keys=True))
@@ -171,37 +182,38 @@ def aws_user_group_create(cli_args, logger):
     for permission in permissions:
         subprocess.run(f"aws iam attach-group-policy "
                        f"--policy-arn arn:aws:iam::aws:policy/{permission} "
-                       f"--group-name {cli_args.iam_group} --output json", check=True, shell=True)
+                       f"--group-name {args.iam_group} --output json",
+                       check=True, shell=True)
 
     logger.info("Adding user to group")
-    subprocess.run(f"aws iam add-user-to-group --user-name {cli_args.iam_user} "
-                   f"--group-name {cli_args.iam_group} --output json", check=True, shell=True)
+    subprocess.run(f"aws iam add-user-to-group --user-name {args.iam_user} "
+                   f"--group-name {args.iam_group} --output json",
+                   check=True, shell=True)
 
     logger.info("Generating secret")
-    keys = subprocess.run(f"aws iam create-access-key --user-name {cli_args.iam_user} --output json",
+    keys = subprocess.run(f"aws iam create-access-key --user-name "
+                          f"{args.iam_user} --output json",
                           check=True, shell=True, capture_output=True)
 
     logger.info("Waiting 20s to reconcile changes")
     time.sleep(20)
 
-    return (user,
-            group,
-            json.loads(keys.stdout)['AccessKey'])
+    return (user, group, json.loads(keys.stdout)['AccessKey'])
 
 
-def azure_app_create(cli_args, logger):
-    '''Create Azure user and group'''
+def azure_app_create(args, logger):
+    '''Create Azure registration ond credentials'''
 
     logger.info("Generating Subscription details")
-    subscriptions = subprocess.run(f'az account list',
+    subscriptions = subprocess.run('az account list',
                                    check=True, shell=True, capture_output=True)
     for subscription in json.loads(subscriptions.stdout):
-        if subscription["name"] == cli_args.subscription_name:
+        if subscription["name"] == args.subscription_name:
             current = subscription
     logger.debug(json.dumps(current, indent=2, sort_keys=True))
 
     logger.info("Creating App Registration")
-    app = subprocess.run(f'az ad app create --display-name {cli_args.app_name}',
+    app = subprocess.run(f'az ad app create --display-name {args.app_name}',
                          check=True, shell=True, capture_output=True)
     app = json.loads(app.stdout)
     logger.debug(json.dumps(app, indent=2, sort_keys=True))
@@ -210,7 +222,7 @@ def azure_app_create(cli_args, logger):
 
     logger.info("Generating Client Secret")
     values = subprocess.run(f'az ad app credential reset --id {app_id} '
-                            f'--credential-description {cli_args.credential} '
+                            f'--credential-description {args.credential} '
                             f'--end-date `date -d "+5 years" +%F`',
                             check=True, shell=True, capture_output=True)
     logger.info("Waiting 20s reconcile the secret creation")
@@ -229,49 +241,48 @@ def azure_app_create(cli_args, logger):
     logger.info("Waiting 20s reconcile role assignment")
     time.sleep(20)
 
-    return (current,
-            app,
-            json.loads(values.stdout))
+    return (current, app, json.loads(values.stdout))
 
 
 def main():
+    '''Main'''
 
     parser = start_argparser()
-    parser, user_namespace = get_shared_cli_args(parser)
-    cli_args = get_additional_cli_args(parser, user_namespace)
+    parser, user_namespace = get_shared_args(parser)
+    args = get_additional_args(parser, user_namespace)
 
     password = getpass.getpass((f"\nPlease enter the Password for "
-                                f"{cli_args.username}: "))
+                                f"{args.username}: "))
 
-    if cli_args.venue == "azure":
+    if args.venue == "azure":
 
         log = 'tuono_azure_setup.txt'
         logger = get_logger(log)
 
-        subscription, app, values = azure_app_create(cli_args, logger)
+        subscription, app, values = azure_app_create(args, logger)
 
         payload = {"cred_type"   : "static",
-                   "name"        : cli_args.app_name,
+                   "name"        : args.app_name,
                    "venue"       : "azure",
                    "client"      : app['appId'],
                    "secret"      : values['password'],
                    "subscription": subscription['id'],
                    "tenant"      : values['tenant']}
 
-    if cli_args.venue == "aws":
+    if args.venue == "aws":
 
         log = 'tuono_aws_setup.txt'
         logger = get_logger(log)
 
-        user, group, keys = aws_user_group_create(cli_args, logger)
+        user, group, keys = aws_user_group_create(args, logger)
 
         payload = {"cred_type" : "static",
-                   "name"      : cli_args.iam_user,
+                   "name"      : args.iam_user,
                    "venue"     : "aws",
                    "access_key": keys['AccessKeyId'],
                    "secret_key": keys['SecretAccessKey']}
 
-    tuono = Tuono(cli_args.username, password)
+    tuono = Tuono(args.username, password)
 
     logger.info("Credential details for the Tuono Portal. "
                 "THESE WILL NOT BE LOGGED:")
