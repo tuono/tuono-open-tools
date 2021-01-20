@@ -83,6 +83,17 @@ def get_shared_args(parser):
 
     return parser, user_namespace
 
+def get_additional_args(parser, user_namespace):
+    '''Options parser'''
+
+    if user_namespace.venue == 'aws':
+        parser, args = get_aws_args(parser, user_namespace)
+
+    elif user_namespace.venue == 'azure':
+        parser, args = get_azure_args(parser, user_namespace)
+
+    return args
+
 
 def get_additional_args(parser, user_namespace):
     '''Options parser'''
