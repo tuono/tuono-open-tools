@@ -1,4 +1,36 @@
 #!/usr/bin/env python3
+#
+# -*- coding: utf-8 -*-
+#
+#  Copyright (c) 2021 Tuono, Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+
+'''
+Tuono credential add tool for Azure and AWS.
+
+USAGE: ./api_get.py --username <username>
+                    --password <password> (optional)
+                    (mutually exclusive)
+                    --venue azure
+                        --subscription_name <subscription_name>
+                        --app_name <app_name>
+                        --credential <credential>
+                    --venue aws
+                        --iam_user <iam_user>
+                        --iam_group <iam_group>
+'''
 
 import argparse
 import getpass
@@ -82,17 +114,6 @@ def get_shared_args(parser):
     parser.parse_known_args(namespace=user_namespace)
 
     return parser, user_namespace
-
-def get_additional_args(parser, user_namespace):
-    '''Options parser'''
-
-    if user_namespace.venue == 'aws':
-        parser, args = get_aws_args(parser, user_namespace)
-
-    elif user_namespace.venue == 'azure':
-        parser, args = get_azure_args(parser, user_namespace)
-
-    return args
 
 
 def get_additional_args(parser, user_namespace):
@@ -216,7 +237,7 @@ def azure_app_create(args, logger):
     '''Create Azure registration ond credentials'''
 
     logger.info("Generating Subscription details")
-    subscriptions = subprocess.run('az account list',
+    subscriptions = subprocess.run("az account list",
                                    check=True, shell=True, capture_output=True)
     for subscription in json.loads(subscriptions.stdout):
         if subscription["name"] == args.subscription_name:
@@ -224,7 +245,7 @@ def azure_app_create(args, logger):
     logger.debug(json.dumps(current, indent=2, sort_keys=True))
 
     logger.info("Creating App Registration")
-    app = subprocess.run(f'az ad app create --display-name {args.app_name}',
+    app = subprocess.run(f"az ad app create --display-name {args.app_name}",
                          check=True, shell=True, capture_output=True)
     app = json.loads(app.stdout)
     logger.debug(json.dumps(app, indent=2, sort_keys=True))
@@ -240,14 +261,14 @@ def azure_app_create(args, logger):
     time.sleep(20)
 
     logger.info("Creating Service Principal")
-    subprocess.run(f'az ad sp create --id {app_id}',
+    subprocess.run(f"az ad sp create --id {app_id}",
                    check=True, shell=True, capture_output=True)
     logger.info("Waiting 20s reconcile the Service Principal creation")
     time.sleep(20)
 
     logger.info("Creating role assignment")
-    subprocess.run(f'az role assignment create --assignee {app_id} '
-                   f'--role Contributor --subscription {current["id"]}',
+    subprocess.run(f"az role assignment create --assignee {app_id} "
+                   f"--role Contributor --subscription {current['id']}",
                    check=True, shell=True, capture_output=True)
     logger.info("Waiting 20s reconcile role assignment")
     time.sleep(20)
