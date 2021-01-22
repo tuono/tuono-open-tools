@@ -2,24 +2,36 @@
 #
 # -*- coding: utf-8 -*-
 #
-#    Copyright (c) 2021 Tuono, Inc.
+#  Copyright (c) 2021 Tuono, Inc.
 #
-#    Contributors: Scott Harrison (Tuono)
+#  Contributors: Scott Harrison (Tuono)
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 #
 
 '''
 Tuono credential add tool for Azure and AWS.
 
-USAGE: ./api_get.py --username <username>
-                    --password <password> (optional)
-                    (mutually exclusive)
-                    --venue azure
-                        --subscription_name <subscription_name>
-                        --app_name <app_name>
-                        --credential <credential>
-                    --venue aws
-                        --iam_user <iam_user>
-                        --iam_group <iam_group>
+USAGE: ./tuono_credential_add.py --username <username>
+                                 --password <password> (optional)
+                                 (mutually exclusive)
+                                 --venue azure
+                                   --subscription_name <subscription_name>
+                                   --app_name <app_name>
+                                   --credential <credential>
+                                --venue aws
+                                  --iam_user <iam_user>
+                                  --iam_group <iam_group>
 '''
 
 import argparse
@@ -310,7 +322,7 @@ def main():
                 "THESE WILL NOT BE LOGGED:")
     # The REST payload is printed to screen, but not logged.
     print(f"\n{json.dumps(payload, indent=2, sort_keys=True)}\n")
-    logger.info("Keep these details in a secure place. If you loose these "
+    logger.info("Keep these details in a secure place. If you lose these "
                 "you will need to recreate the registration")
     logger.info("Making REST call to add credentials to the Tuono Portal")
     creds = tuono.add_credentials(payload)
