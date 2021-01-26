@@ -75,10 +75,10 @@ class Tuono():
         self.headers = {'Authorization': self.token,
                         'Content-Type' : 'application/json'}
 
-    def add_credentials(self, payload):
+    def add_credentials(self, payload, venue):
         '''Add credentials'''
 
-        request = requests.post(url=f'{self.base_uri}/vault_insert_credential',
+        request = requests.post(url=f'{self.base_uri}/credential/{venue}',
                                 headers=self.headers,
                                 data=json.dumps(payload))
 
@@ -325,7 +325,10 @@ def main():
     logger.info("Keep these details in a secure place. If you lose these "
                 "you will need to recreate the registration")
     logger.info("Making REST call to add credentials to the Tuono Portal")
-    creds = tuono.add_credentials(payload)
+    if args.venue == "azure":
+        creds = tuono.add_credentials(payload, "azure")
+    if args.venue == "aws"
+        creds = tuono.add_credentials(payload, "aws")
     logger.debug(f"{json.dumps(creds, indent=2, sort_keys=True)}")
     logger.info(f"To see DEBUG logs, please review {log}")
 
