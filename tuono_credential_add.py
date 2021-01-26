@@ -191,14 +191,14 @@ def get_logger(filename):
 def aws_user_group_create(args, logger):
     '''Create AWS user and group'''
 
-    logger.info("Creating IAM user")
+    logger.info(f"Creating IAM user {args.iam_user}")
     user = subprocess.run(f"aws iam create-user --user-name {args.iam_user} "
                           f"--output json",
                           check=True, shell=True, capture_output=True)
     user = json.loads(user.stdout)
     logger.debug(json.dumps(user, indent=2, sort_keys=True))
 
-    logger.info("Creating IAM group")
+    logger.info(f"Creating IAM group {args.iam_user}")
     group = subprocess.run(f"aws iam create-group --group-name "
                            f"{args.iam_group} --output json",
                            check=True, shell=True, capture_output=True)
@@ -219,7 +219,7 @@ def aws_user_group_create(args, logger):
                        f"--group-name {args.iam_group} --output json",
                        check=True, shell=True)
 
-    logger.info("Adding user to group")
+    logger.info(f"Adding {args.iam_user} to {args.iam_group}")
     subprocess.run(f"aws iam add-user-to-group --user-name {args.iam_user} "
                    f"--group-name {args.iam_group} --output json",
                    check=True, shell=True)
@@ -246,7 +246,7 @@ def azure_app_create(args, logger):
             current = subscription
     logger.debug(json.dumps(current, indent=2, sort_keys=True))
 
-    logger.info("Creating App Registration")
+    logger.info(f"Creating App Registration {args.app_name}")
     app = subprocess.run(f"az ad app create --display-name {args.app_name}",
                          check=True, shell=True, capture_output=True)
     app = json.loads(app.stdout)
@@ -297,7 +297,6 @@ def main():
 
         payload = {"cred_type"   : "static",
                    "name"        : args.app_name,
-                   "venue"       : "azure",
                    "client"      : app['appId'],
                    "secret"      : values['password'],
                    "subscription": subscription['id'],
@@ -312,7 +311,6 @@ def main():
 
         payload = {"cred_type" : "static",
                    "name"      : args.iam_user,
-                   "venue"     : "aws",
                    "access_key": keys['AccessKeyId'],
                    "secret_key": keys['SecretAccessKey']}
 
@@ -327,7 +325,7 @@ def main():
     logger.info("Making REST call to add credentials to the Tuono Portal")
     if args.venue == "azure":
         creds = tuono.add_credentials(payload, "azure")
-    if args.venue == "aws"
+    if args.venue == "aws":
         creds = tuono.add_credentials(payload, "aws")
     logger.debug(f"{json.dumps(creds, indent=2, sort_keys=True)}")
     logger.info(f"To see DEBUG logs, please review {log}")
