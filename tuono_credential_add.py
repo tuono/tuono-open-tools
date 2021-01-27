@@ -84,6 +84,17 @@ class Tuono():
 
         return request.json()['object']
 
+    def get_job(self, job_id):
+        '''Invoke Job GET method'''
+
+        request = requests.get(url=f'{self.base_uri}/async_job?job_id={job_id}',
+                               headers=self.headers)
+
+        if not 'object' in request.json().keys():
+            return request.json()['status']
+        else:
+            return request.json()['object']['status']
+
 
 class UserNameSpace(object):
     '''User namespace object'''
@@ -212,7 +223,7 @@ def aws_user_group_create(args, logger):
                    "ResourceGroupsandTagEditorFullAccess",
                    "AmazonRDSReadOnlyAccess")
 
-    logger.info("Adding IAM permissions to group")
+    logger.info(f"Adding IAM permissions to {args.iam_group}")
     for permission in permissions:
         subprocess.run(f"aws iam attach-group-policy "
                        f"--policy-arn arn:aws:iam::aws:policy/{permission} "
@@ -287,7 +298,6 @@ def main():
 
     password = getpass.getpass((f"\nPlease enter the Password for "
                                 f"{args.username}: "))
-
     if args.venue == "azure":
 
         log = 'tuono_azure_setup.txt'
@@ -323,12 +333,27 @@ def main():
     logger.info("Keep these details in a secure place. If you lose these "
                 "you will need to recreate the registration")
     logger.info("Making REST call to add credentials to the Tuono Portal")
+
     if args.venue == "azure":
         creds = tuono.add_credentials(payload, "azure")
     if args.venue == "aws":
         creds = tuono.add_credentials(payload, "aws")
     logger.debug(f"{json.dumps(creds, indent=2, sort_keys=True)}")
-    logger.info(f"To see DEBUG logs, please review {log}")
+
+    job_id = creds['_id']
+    job_status = tuono.get_job(job_id)
+
+    while job_status != 200:
+        if job_status != 412:
+            logger.info(f"The job Failed. Error code HTTP {job_status}")
+            sys.exit(1)
+        else:
+            logger.info(f"Job still running")
+            time.sleep(10)
+            job_status = tuono.get_job(job_id)
+
+    logger.info(f"Pushing credentials to Tuono succeeded!")
+    logger.info(f"To see DEBUG logs, please review {log}. Command: less {log}")
 
 
 if __name__ == '__main__':
